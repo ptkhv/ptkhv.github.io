@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ДРЕЙФ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0d0d;
+  color: #c0c0c0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px 60px;
+}
+
+#card {
+  width: 100%;
+  max-width: 620px;
+}
+
+.hr {
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.h-double { color: #606060; }
+.h-dot    { color: #3a3a3a; }
+.h-single { color: #3a3a3a; }
+
+.title {
+  font-size: 15px;
+  font-weight: normal;
+  color: #e8e8e8;
+  padding: 7px 2px;
+  letter-spacing: 0.15em;
+}
+
+.label {
+  font-size: 12px;
+  color: #666;
+  letter-spacing: 0.25em;
+  padding: 6px 2px;
+}
+
+.body-text {
+  padding: 10px 2px 14px;
+  color: #d0d0d0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.strochka {
+  padding: 0 2px 14px;
+  color: #7a7a7a;
+  font-style: italic;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.buttons {
+  display: flex;
+  gap: 14px;
+  padding-top: 18px;
+}
+
+button {
+  background: none;
+  border: 1px solid #3a3a3a;
+  color: #888;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 7px 22px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  transition: border-color 0.12s, color 0.12s;
+}
+button:hover { border-color: #999; color: #ddd; }
+button.go    { border-color: #555; color: #bbb; }
+
+#loading { color: #444; letter-spacing: 0.15em; padding-top: 60px; }
+
+#end {
+  display: none;
+  padding-top: 2px;
+}
+.end-text {
+  color: #888;
+  padding: 7px 2px;
+  letter-spacing: 0.1em;
+}
+</style>
+</head>
+<body>
+<div id="card">
+
+  <div id="loading">загрузка…</div>
+
+  <div id="main" style="display:none">
+    <div class="hr h-double" id="hr1"></div>
+    <div class="title"    id="step-title">ДРЕЙФ · шаг 1</div>
+    <div class="hr h-double" id="hr2"></div>
+
+    <br>
+
+    <div class="hr h-dot"    id="hr3"></div>
+    <div class="label">ИНСТРУКЦИЯ</div>
+    <div class="hr h-dot"    id="hr4"></div>
+    <div class="body-text"   id="inst-text"></div>
+
+    <div class="hr h-dot"    id="hr5"></div>
+    <div class="label">ДЕБОР</div>
+    <div class="hr h-dot"    id="hr6"></div>
+    <div class="body-text"   id="quote-text"></div>
+    <div class="strochka"    id="line-text"></div>
+
+    <div class="hr h-single" id="hr7"></div>
+
+    <div class="buttons">
+      <button class="go" onclick="nextStep()">[ продолжить ]</button>
+      <button           onclick="finish()">[ завершить ]</button>
+    </div>
+  </div>
+
+  <div id="end">
+    <div class="hr h-double" id="hr-e1"></div>
+    <div class="end-text"    id="end-text"></div>
+    <div class="hr h-double" id="hr-e2"></div>
+  </div>
+
+</div>
+<script>
+// ── width ─────────────────────────────────────────────────────────
+const W = 58;
+function hr(ch) { return ch.repeat(W); }
+
+function fillHRs() {
+  document.getElementById('hr1').textContent = hr('═');
+  document.getElementById('hr2').textContent = hr('═');
+  document.getElementById('hr3').textContent = hr('·');
+  document.getElementById('hr4').textContent = hr('·');
+  document.getElementById('hr5').textContent = hr('·');
+  document.getElementById('hr6').textContent = hr('·');
+  document.getElementById('hr7').textContent = hr('─');
+}
+
+// ── state ─────────────────────────────────────────────────────────
+let instructions = [];
+let quotes       = [];
+let iPool        = [];
+let qPool        = [];
+let step         = 0;
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
+
+function refill(pool, src) {
+  if (pool.length === 0) {
+    pool.push(...src);
+    shuffle(pool);
+  }
+}
+
+// ── resolve {label:min-max} placeholders ──────────────────────────
+function resolve(tmpl) {
+  return tmpl.replace(/\{[^:}]+:(\d+)-(\d+)\}/g, (_, lo, hi) => {
+    const n = Math.floor(Math.random() * (parseInt(hi) - parseInt(lo) + 1)) + parseInt(lo);
+    return n;
+  });
+}
+
+// ── display ───────────────────────────────────────────────────────
+function nextStep() {
+  refill(iPool, instructions);
+  refill(qPool, quotes);
+
+  step++;
+  const inst = iPool.pop();
+  const q    = qPool.pop();
+
+  document.getElementById('step-title').textContent = `ДРЕЙФ · шаг ${step}`;
+  document.getElementById('inst-text').textContent  = resolve(inst);
+  document.getElementById('quote-text').textContent = q.цитата;
+
+  const lineEl = document.getElementById('line-text');
+  if (q.строчка) {
+    lineEl.textContent    = q.строчка;
+    lineEl.style.display  = 'block';
+  } else {
+    lineEl.style.display  = 'none';
+  }
+
+  window.scrollTo(0, 0);
+}
+
+function finish() {
+  document.getElementById('main').style.display = 'none';
+  const endDiv = document.getElementById('end');
+  endDiv.style.display = 'block';
+  document.getElementById('hr-e1').textContent  = hr('═');
+  document.getElementById('hr-e2').textContent  = hr('═');
+  document.getElementById('end-text').textContent =
+    `  Дрейф завершён. Шагов: ${step}.`;
+}
+
+// ── init ──────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const [qData, iData] = await Promise.all([
+      fetch('../quotes.json').then(r => r.json()),
+      fetch('./inst.json').then(r => r.json())
+    ]);
+
+    quotes       = qData;
+    instructions = Array.isArray(iData) ? iData : iData.instructions;
+
+    fillHRs();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display    = 'block';
+    nextStep();
+  } catch (e) {
+    document.getElementById('loading').textContent = 'ошибка загрузки: ' + e.message;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
